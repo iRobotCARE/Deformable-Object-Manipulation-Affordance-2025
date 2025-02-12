@@ -1,1 +1,1 @@
-# Deformable-Object-Manipulation-Affordance-2025
+# Deformable Object Manipulation & Affordance-2025
