@@ -11,9 +11,49 @@ Robotic soft tissue manipulation in surgery presents significant challenges due 
 
 
 # METHOD
-![Control framework](images/control-frame.png)
+<!-- ![Control framework](images/control-frame.png) -->
+<img src="images/control-frame.png" style="display: block; max-width: 95%; height: auto; margin-left: auto; margin-right: auto;" alt="Control framework">
+
+# SIMULATIONS
+### 1. Control of a Specified Angle
+
+<div style="width: 95%; margin: 20px auto;">
+   <iframe width="640" height="360" src="https://www.youtube.com/embed/ZGHS-rUw-EA?si=7K0D-2aBA6oxVnK8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+<div style="width: 95%; margin: 20px auto;">
+   <iframe width="640" height="360" src="https://www.youtube.com/embed/FYNRn9j0Kcw?si=exoqHK5uEJf8byYV" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+<div style="width: 95%; margin: 20px auto;">
+   <iframe width="640" height="360" src="https://www.youtube.com/embed/B0zZOhVUEC0?si=KDfZzktnTZMkDfUd" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+### 2. Liver Retraction for Gallbladder Exposure
+
+<div style="width: 95%; margin: 20px auto;">
+   <iframe width="640" height="360" src="https://www.youtube.com/embed/sLFUk8dWhxg?si=V-ZRhEy0FQocaVQp" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+# EXPERIMENTS
+
+## Pre-tension
+### 1. Silicon Material
+
+<div style="width: 95%; margin: 20px auto;">
+   <iframe width="640" height="360" src="https://www.youtube.com/embed/W5ah8saajTQ?si=IpVgW3Zm8S_paimM" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
+
+<div style="width: 95%; margin: 0 auto;">
+   <iframe width="640" height="360" src="https://www.youtube.com/embed/QkQ69AMHQvE?si=RsiFIO-3M3N05MI3" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
 
 
-# SIMULATIONS & EXPERIMENTS
+### 2. Latex Material
+<div style="width: 95%; margin: 20px auto;">
+   <iframe width="640" height="360" src="https://www.youtube.com/embed/F__YF0XvHFc?si=GWB0R2Kydyery7pC" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
 
-
+<div style="width: 95%; margin: 20px auto;">
+   <iframe width="640" height="360" src="https://www.youtube.com/embed/Zhe9zo_uGPw?si=NPzpI23AkaxMDyPY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
