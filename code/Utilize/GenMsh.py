@@ -1,5 +1,5 @@
 """
-使用pygmsh来划分网格,然后写入.msh文件
+created on 
 """
 import os
 import pygmsh
@@ -7,18 +7,16 @@ import numpy as np
 from typing import Tuple, List
 import numpy.typing as npt
 import yaml
-# import pyvista as pv
 from scipy.spatial import Delaunay
 import random
 
-
 def mesh_obj_tri(obj_shape:List[float], seed_size:float)->Tuple[npt.NDArray[np.float64], npt.NDArray[np.int32], npt.NDArray[np.int32]]:
-    """将二维对象生成三角形网格
+    """ Generate a triangular mesh for a 2D object
     Args:
         obj_shape (List[float]): [length, width]
-        seed_size (float): 网格尺寸
+        seed_size (float): mesh size
     Returns:
-        Tuple[npt.NDArray[np.float64], npt.NDArray[np.int32], npt.NDArray[np.int32]]: 节点、边、单元
+        Tuple[npt.NDArray[np.float64], npt.NDArray[np.int32], npt.NDArray[np.int32]]: nodes, edges, elements
     """
     length, width = obj_shape
 
@@ -46,26 +44,23 @@ def mesh_obj_tri(obj_shape:List[float], seed_size:float)->Tuple[npt.NDArray[np.f
 
     return node, edge, element
 
-
 def write_msh2_tri(filename:str, nodes:npt.NDArray, triangles:npt.NDArray):
-    """写入版本为2的三角形网格的.msh文件
+    """ Write a triangular mesh to a .msh file (Version 2.2 format)
     Args:
-        nodes (npt.NDArray): 节点列表，每个元素为 (x, y) 或 (x, y, z)
-        triangles (npt.NDArray): 三角形面片列表，每个元素为 (i, j, k), 假定索引从0开始
-        filename (str): 输出文件名
+        nodes (npt.NDArray): Vertex node list, each element is (x, y) or (x, y, z)
+        triangles (npt.NDArray): Triangle face list, each element is (i, j, k), assuming 0-based indexing
+        filename (str): Output file name
     """
     with open(filename, "w") as f:
-        # 写入 MeshFormat 部分
         f.write("$MeshFormat\n")
-        # 版本号2.2，文件类型0（ASCII），数据大小8
+        # Version 2.2, file type 0 (ASCII), data size 8
         f.write("2.2 0 8\n")
         f.write("$EndMeshFormat\n")
         
-        # 写入 Nodes 部分
         f.write("$Nodes\n")
         f.write("{}\n".format(len(nodes)))
         for i, node in enumerate(nodes, start=1):
-            # 如果节点只有两个坐标，则默认 z=0.0
+            # If the node has only two coordinates, default z=0.0
             if node.shape[0] == 2:
                 x, y = node
                 z = 0.0
@@ -73,18 +68,17 @@ def write_msh2_tri(filename:str, nodes:npt.NDArray, triangles:npt.NDArray):
                 x, y, z = node
             f.write("{} {} {} {}\n".format(i, x, y, z))
         f.write("$EndNodes\n")
-        
-        # 写入 Elements 部分
+
+        # Write the Elements section
         f.write("$Elements\n")
         f.write("{}\n".format(triangles.shape[0]))
         for i, tri in enumerate(triangles, start=1):
-            # Gmsh中，三角形单元的类型为2
-            # 此处 tags 数量设为0（可以根据需要增加物理区域等信息）
-            # 注意：将0开始的索引转换为1开始
+            # In Gmsh, the element type for triangles is 2
+            # Here, the number of tags is set to 0 (can be increased for physical regions, etc.)
+            # Note: Convert 0-based indexing to 1-based
             n1, n2, n3 = tri
             f.write("{} 2 0 {} {} {}\n".format(i, n1+1, n2+1, n3+1))
         f.write("$EndElements\n")
-
 
 if __name__ == '__main__':
     pass

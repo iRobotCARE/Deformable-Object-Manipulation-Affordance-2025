@@ -1,13 +1,11 @@
-""" 用于为MPC控制器验证的2D模拟, 场景是切割前的预拉伸, 使用两个接触点
-目的是为了验证*MPC*控制器的约束, 并证明不同的接触点选择影响任务完成效率
-created at 2025-03-29 by hsy
+"""
+- A 2D simulation for MPC controller validation, with the scenario being pre-stretching before cutting, using two contact points
+- The purpose is to validate the constraints of the *MPC* controller and demonstrate how different contact point selections affect task completion efficiency
+created on 2025-8-18
 """
 import Sofa
-import SofaRuntime
-import Sofa.Gui
-import Sofa.SofaGL
-import os, sys
 from typing import List, Dict, DefaultDict, Tuple
+from pathlib import Path
 import numpy as np
 import numpy.typing as npt 
 from scipy import sparse
@@ -17,13 +15,10 @@ import meshio
 import taichi as ti
 ti.init(arch=ti.cpu, debug=True, default_fp=ti.f64)
 
-script_dir = os.path.dirname(os.path.abspath(__file__))         # 获取脚本文件所在的绝对路径
-os.chdir(script_dir)                                            # 改变当前工作目录到脚本文件所在目录
+dir_path = Path(__file__).parent
 
-root_path = os.path.abspath(os.path.join(script_dir, '..'))
-sys.path.append(root_path)
 from DiffPD2d import SoftObject2D, line_from_points_2d
-from Utilize.GenMsh import read_mshv2_triangle, mesh_obj_tri, write_msh2_tri
+from Utilize.GenMsh import read_mshv2_triangle, mesh_obj_tri, write_mshv2_tri
 
 
 def convert_node_indice(old_node_num, domain_length=0.1, old_res=0.01, new_res=0.005):
@@ -47,6 +42,7 @@ def convert_node_indice(old_node_num, domain_length=0.1, old_res=0.01, new_res=0
 
 
 def createScene(root, contact:List[int]):
+    """ Create scene in SOFA, use FEM or MassSpring to simulate the soft body """
     root.addObject('RequiredPlugin', pluginName=['Sofa.Component',
                                                  'Sofa.Component.Collision',
                                                  'Sofa.Component.Constraint.Projective',
@@ -66,11 +62,22 @@ def createScene(root, contact:List[int]):
     root.addObject('NewProximityIntersection', name="Proximity", alarmDistance="0.5", contactDistance="0.2")
     root.addObject('CollisionResponse', name="Response", response="PenalityContactForceField")
 
+    # FEM setup
+    # root.addObject('FreeMotionAnimationLoop')
+    # root.addObject('GenericConstraintSolver', tolerance=1e-9, maxIterations=200)
+
+    # root.addObject('CollisionPipeline', name='Pipeline', verbose='0')
+    # root.addObject('BruteForceBroadPhase', name='BroadPhase')
+    # root.addObject('BVHNarrowPhase', name='NarrowPhase')
+    # root.addObject('CollisionResponse', name='Response', response='PenalityContactResponse')
+    # root.addObject('MinProximityIntersection', name='Proximity', alarmDistance=0.8, contactDistance=0.5)
+
     obj = root.addChild('object')
-    # Rayleigh阻尼影响了软体振动
+    # Rayleigh damping affects soft body vibrations
     obj.addObject('EulerImplicitSolver', name='odesolver', rayleighStiffness='0.1', rayleighMass='0.1')
     obj.addObject('CGLinearSolver', name='linearsolver', iterations='200', tolerance='1.e-9', threshold='1.e-9')
 
+    # obj.addObject('MeshVTKLoader', name='loader', filename='trian.vtk', scale='1', flipNormals='0')
     obj.addObject('MeshGmshLoader', name='loader', filename='Mesh/shape_split.msh', scale='1', flipNormals='0')
     obj.addObject('MechanicalObject', src='@loader', name='dofs', template='Vec3', translation2=[0., 0., 0.], scale3d=[1.]*3)
     obj.addObject('TriangleSetTopologyContainer', src='@loader', name='container')
@@ -83,7 +90,9 @@ def createScene(root, contact:List[int]):
     obj_fixed = obj.addObject('FixedConstraint', name='fixed', indices='@box.indices')
 
     obj.addObject('MeshSpringForceField', name="springs", trianglesStiffness=90, trianglesDamping=0.3)
+    # obj.addObject('TriangularFEMForceField', name='FEM', youngModulus='5.e2', poissonRatio='0.3', method='large')
     obj.addObject('TriangleCollisionModel')
+    # obj.addObject('UncoupledConstraintCorrection', defaultCompliance="0.001")
 
     obj_move_list = []
     for q_i in contact:
@@ -93,7 +102,7 @@ def createScene(root, contact:List[int]):
 
 
 def add_move(handle_list:list, dt:float, movement:npt.NDArray):
-    """ Use `LinearMovemetConstraint` to add a simulation step-wise movement
+    """ Use `LinearMovementConstraint` to add a simulation step-wise movement
     Args:
         handle: The node of the object
         dt: The time step
@@ -111,10 +120,8 @@ def add_move(handle_list:list, dt:float, movement:npt.NDArray):
         handle.findData('keyTimes').value = np.append(times_array, last_time + dt)
         handle.findData('movements').value = np.append(movements_array, [movement[i,:] + last_movement], axis=0)
 
-
 def get_marker_pos(handle, marker_idx:list)->npt.NDArray:
-    """从sofa中获取指定节点的位置
-    """
+    """ Get the position of the specified markers from Sofa """
     marker_pos = np.zeros((len(marker_idx), 3))
     # node_pos = handle.findData('position').value
     for i, idx in enumerate(marker_idx):
@@ -122,22 +129,22 @@ def get_marker_pos(handle, marker_idx:list)->npt.NDArray:
         marker_pos[i] = pos_tmp
     return marker_pos
 
-
 def save_vtu(mesh_file:str, pos:npt.NDArray, write_name:str):
-    """Save the node position to a .vtu file
+    """ Save the node position to a .vtu file
     Args:
         mesh_file (str): The initial mesh file name
         pos (npt.NDArray): The node position
-        write_name (istrnt): The write file name
+        write_name (str): The write file name
     """
     _, triangles = read_mshv2_triangle(mesh_file)
 
     cells_write = [("triangle", triangles)]
     mesh = meshio.Mesh(points=pos, cells=cells_write)
-    mesh.write(f"data/{write_name}")
+    mesh.write(f"{dir_path}/data/{write_name}")
 
 
 class MyObject(SoftObject2D):
+    """ Construct a deformation model for the object, using PD algorithm """
     def __init__(self, shape, fix, contact, dots_list, E, nu, dt, density, **kwargs):
         super().__init__(shape, fix, contact, E, nu, dt, density, **kwargs)
         self.loss = 0.
@@ -150,7 +157,6 @@ class MyObject(SoftObject2D):
         print(f"Marker index: {self.dots_idx}")
 
         self.line_params = self.construct_line()
-
     
     def construct_line(self):
         for i, idx in enumerate(self.dots_idx):
@@ -160,22 +166,19 @@ class MyObject(SoftObject2D):
         line_params = line_from_points_2d(pos1, pos2)
 
         return line_params
-    
 
     def update_dot_pos(self):
         for i, idx in enumerate(self.dots_idx):
             self.dot_pos[i] = self.node_pos[idx]
-
         
     def construct_L_sofa(self, dot_sofa:npt.NDArray, factor:float):
-        """将两个标记点拉伸到指定间距
-        """
+        """ Stretch two marker points to the specified spacing """
         self.dL_dq_contact.fill(0.)
         if len(self.dots_idx) != 2:
             raise ValueError("The number of marker is not 2")
         else:
             idx1, idx2 = self.dots_idx
-        pos1, pos2 = dot_sofa[:,:2]         # sofa中是三维坐标
+        pos1, pos2 = dot_sofa[:,:2]         # only use x, y coordinates
         dis_tmp = np.linalg.norm(pos1 - pos2)
         dis_desired = np.linalg.norm(
             self.node_pos_init[idx1].to_numpy() - self.node_pos_init[idx2].to_numpy()
@@ -184,7 +187,7 @@ class MyObject(SoftObject2D):
         a, b, c = self.line_params
         line_normal = np.array([a, b], dtype=np.float64)
 
-        # 两个点到直线的距离
+        # The distance from point to pre-defined line
         line_distance1 = line_normal.dot(pos1) + c
         line_distance2 = line_normal.dot(pos2) + c
 
@@ -199,9 +202,8 @@ class MyObject(SoftObject2D):
 
         return dis_tmp, loss
         
-
     def compute_dcontact(self, dot_sofa:npt.NDArray):
-        """ \partial L / \partial y with contact action, 计算关于contact的导数, 用于控制
+        """ \partial L / \partial y with contact action
         """
         dist_tmp, loss_tmp = self.construct_L_sofa(dot_sofa, 1.15)
         self.construct_g_hessian()
@@ -213,41 +215,36 @@ class MyObject(SoftObject2D):
         self.dy_contact = np.multiply(z_np, self.dx_const.to_numpy())
 
         return loss_tmp
-    
 
     def compute_jacobian(self):
-        """计算全局雅可比矩阵, 得到dq/dy(2n*2n)
-        """
+        """ Compute the deformation Jacobian matrix, dq/dy(2n*2n) """
         A = self.lhs.to_numpy()
         matrix_l = np.kron(A, np.eye(2)) - self.dA
         matrix_r = np.diag(self.dx_const.to_numpy())
         self.dq_dy_np = np.linalg.solve(matrix_l, matrix_r)
 
-
     def compute_contact_j(self):
-        """从dq/dy中提取全局节点关于contact的雅可比矩阵
-        """
+        """ Extract the global node Jacobian matrix with respect to contact from dq/dy """
         self.construct_g_hessian()
         self.compute_jacobian()
 
         contact = np.asarray(self.contact_particle_list, dtype=np.int32)
         marker = np.asarray(self.dots_idx, dtype=np.int32)
         contact_dims = np.column_stack((2 * contact, 2 * contact + 1)).ravel()
+        marker_dims = np.column_stack((2 * marker, 2 * marker + 1)).ravel()
 
         contact_j = self.dq_dy_np[:, contact_dims]
         self.contact_j = contact_j.copy()
         return contact_j
-    
 
     def build_mpc(self, H: int, contact_j:npt.NDArray, dots_sofa: npt.NDArray, factor: float):
-        """构建NLP问题
-        """
-        opti = ca.Opti()  # 创建Opti实例
+        """ Construct the MPC problem and solve it """
+        opti = ca.Opti()  # Create Opti instance
 
-        # 定义决策变量
+        # Define decision variables
         U = opti.variable(2 * self.CON_N * H)
 
-        # 初始化损失函数
+        # Initialize loss function
         total_loss = ca.MX(0.0)
         decrease_w = 1.0
         u_max = 0.02 * self.dt
@@ -256,13 +253,13 @@ class MyObject(SoftObject2D):
         contact_j_casadi = ca.MX(contact_j)
         ele_Xg_inv = self.Xg_inv.to_numpy()
 
-        # 计算期望距离
+        # Compute desired distance
         dis_desired = np.linalg.norm(
             self.node_pos_init[self.dots_idx[0]] - self.node_pos_init[self.dots_idx[1]]) * factor
 
         a, b, c = self.line_params
 
-        # 初始化位置
+        # Initialize positions
         pos1 = ca.MX(dots_sofa[0, :2].reshape(1, 2))
         pos2 = ca.MX(dots_sofa[1, :2].reshape(1, 2))
 
@@ -275,7 +272,7 @@ class MyObject(SoftObject2D):
             opti.subject_to(ca.sumsqr(u_t[0:2]) <= u_max**2)
             opti.subject_to(ca.sumsqr(u_t[2:4]) <= u_max**2)
 
-            # 更新节点位置
+            # Update node positions
             dnode_pos = contact_j_casadi @ u_t
             node_pos += dnode_pos
 
@@ -289,41 +286,37 @@ class MyObject(SoftObject2D):
                 F_i_det_con[f_i + t * self.ELEMENT_N] = F_i_det
                 opti.subject_to(F_i_det <= 1.4)
 
-            # 更新位置
+            # Update positions
             pos1 += dnode_pos[2*self.dots_idx[0]: 2*self.dots_idx[0] + 2].T
             pos2 += dnode_pos[2*self.dots_idx[1]: 2*self.dots_idx[1] + 2].T
 
-            # 计算当前距离
+            # Compute current distance
             dis_now = ca.norm_2(pos1 - pos2)
 
-            # 计算距离损失
+            # Compute distance loss
             dist_loss = (dis_now - dis_desired)**2
 
-            # 计算线损失
+            # Compute line distance loss
             line1 = a * pos1[0] + b * pos1[1] + c
             line2 = a * pos2[0] + b * pos2[1] + c
             line_loss = line1**2 + line2**2
 
-            # 更新总损失
-            total_loss += np.power(decrease_w, t) * (dist_loss + line_loss)
+            total_loss += np.power(decrease_w, t) * (dist_loss + line_loss)  # Update total loss
 
-        # 定义目标函数
+        # Define objective function
         opti.minimize(total_loss)
 
-        # 设置求解器选项
+        # Set solver options
         opti.solver('ipopt', {'ipopt.print_level': 0, 'print_time': 0, 'ipopt.tol': 1e-8})
 
-        # 初始猜测
+        # Initial guess
         opti.set_initial(U, np.zeros(2 * self.CON_N * H))
-
-        # 求解问题
         sol = opti.solve()
 
-        # 获取优化结果
+        # Get optimization results
         U_opt = sol.value(U)
         max_strain = sol.value(F_i_det_con).max()
         print(f"MPC Calculation Loss: {sol.value(total_loss)}")
-
         print(f"Max strain: {max_strain}")
 
         return U_opt[:2*self.CON_N], max_strain
@@ -331,6 +324,7 @@ class MyObject(SoftObject2D):
 
 @ti.data_oriented
 class SofaObject:
+    """ A model for the Sofa object, used to compute the stretch energy """
     def __init__(self, points:npt.NDArray, triangles:npt.NDArray):
         self.points_num = points.shape[0]
         self.triangles_num = triangles.shape[0]
@@ -349,14 +343,12 @@ class SofaObject:
         self.compute_area()
         self.construct_Xg_inv()
 
-    
     @ti.kernel
     def compute_area(self):
         for f_i in range(self.triangles_num):
             ia, ib, ic = self.triangles[f_i]
             qa, qb, qc = self.node_pos_init[ia], self.node_pos_init[ib], self.node_pos_init[ic]
             self.triange_area[f_i] = 0.5 * ti.abs(((qb - qa).cross(qc - qa)))
-
 
     @ti.kernel
     def construct_Xg_inv(self):
@@ -367,7 +359,6 @@ class SofaObject:
             c = ti.Vector([self.node_pos_init[ic].x, self.node_pos_init[ic].y])
             B_i_inv = ti.Matrix.cols([b - a, c - a])
             self.Xg_inv[i] = B_i_inv.inverse()
-
 
     @ti.kernel
     def construct_rhs_stretch(self):
@@ -382,7 +373,12 @@ class SofaObject:
 
 
 def main(contact_list:List[int], marker_list:List[int]):
-    # 定义所有候选接触点所在边界的角度(相对于X+轴)    
+    # contact_sofa = [399, 420, 421, 439, 440, 419]
+    # contact_sofa = [231, 252, 273, 439, 440, 419]
+    # contact_list = [66, 120]
+    # marker_sofa = [346, 390]
+    # marker_list = [93, 105]
+
     contact_angle = {11:90, 22:90, 33:90, 44:90, 55:90, 66:90, 77:90, 88:90, 99:90,
                     21:-90, 32:-90, 43:-90, 54:-90, 65:-90, 76:-90, 87:-90, 98:-90, 109:-90,
                     111:0, 112:0, 113:0, 114:0, 115:0, 116:0, 117:0, 118:0, 119:0}
@@ -390,6 +386,7 @@ def main(contact_list:List[int], marker_list:List[int]):
     shape = [0.1, 0.1]
     fix = range(11)
     H:int = 3           # MPC的Horizon
+    # gain = 5.e2
     contact_sofa, marker_sofa = [], []
 
     for contact in contact_list:
@@ -408,10 +405,9 @@ def main(contact_list:List[int], marker_list:List[int]):
     marker_sofa = [int(x) for x in marker_sofa]
     # print(contact_sofa, marker_sofa)
 
-    # 保存sofa中的网格(相较于模型网格更高分辨率)
     node_np, _, ele_np = mesh_obj_tri(shape, 0.01/2)
-    msh_file:str = "Mesh/rect_highres.msh"
-    write_msh2_tri(msh_file, node_np, ele_np)
+    msh_file:str = dir_path / "Mesh/shape_split.msh"
+    write_mshv2_tri(msh_file, node_np, ele_np)
 
     # Setup Sofa scene -----------------------------------------
     root = Sofa.Core.Node('root')
@@ -445,11 +441,11 @@ def main(contact_list:List[int], marker_list:List[int]):
         sofa_pos_tmp = dofs.findData('position').value
         soft_sofa.node_pos.from_numpy(sofa_pos_tmp[:,:2])
         soft_sofa.construct_rhs_stretch()
-        # 用于保存每个时刻的节点位置, 生成paraview支持的.vtu文件
         # save_vtu('Mesh/shape_split.msh', sofa_pos_tmp, f'shape_{step:04d}.vtu')
 
         soft.substep(step)
-        contact_j = soft.compute_contact_j()        # 以此作为MPC的线性模型
+        contact_j = soft.compute_contact_j()        # as linearization MPC model
+        # np.savetxt(f"contact.csv", cantact_j, fmt="%.6f", delimiter=",")
         vel_flatten, max_strain = soft.build_mpc(1, contact_j, dots_pos_sofa_new[:,:2], 1.1)
         _, loss_tmp = soft.construct_L_sofa(dots_pos_sofa_new[:,:2], 1.1)
 
@@ -470,9 +466,8 @@ def main(contact_list:List[int], marker_list:List[int]):
         loss_list.append(loss_tmp)
         max_strain_list.append(max_strain)
 
-    np.savetxt("data/loss_list.csv", loss_list, fmt="%e", delimiter=",")
-    np.savetxt("data/max_strain_list.csv", max_strain_list, fmt="%e", delimiter=",")
-
+    np.savetxt(f"{dir_path}/data/loss_list.csv", loss_list, fmt="%e", delimiter=",")
+    np.savetxt(f"{dir_path}/data/max_strain_list.csv", max_strain_list, fmt="%e", delimiter=",")
 
 if __name__ == "__main__":
     # main([55, 98], [93, 105])

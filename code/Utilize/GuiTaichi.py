@@ -1,11 +1,9 @@
 """
 This file is used to create the GUI for Taichi
-cretaed at 2024-12-11 by hsy
+created on 2024-12-11
 """
-
 from typing import List
 import taichi as ti
-
 
 def gui_set(pos:List[float], target:List[float], up_orient, name:str="Dynamics", FOV:float=60):
     # init the window, canvas, scene and camerea
@@ -18,7 +16,7 @@ def gui_set(pos:List[float], target:List[float], up_orient, name:str="Dynamics",
     camera.lookat(target[0], target[1], target[2])
     camera.projection_mode(ti.ui.ProjectionMode.Perspective)
 
-    # 设置相机的向上轴的方向，在相机模型中是-Y轴
+    # Set the camera's up direction, which is -Y axis in camera model
     # camera.up(0., 0., -1.)
     camera.up(up_orient[0], up_orient[1], up_orient[2])
     camera.z_near(0.01)
