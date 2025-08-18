@@ -57,3 +57,8 @@ Robotic soft tissue manipulation in surgery presents significant challenges due 
 <div style="width: 95%; margin: 20px auto;">
    <iframe width="640" height="360" src="https://www.youtube.com/embed/Zhe9zo_uGPw?si=NPzpI23AkaxMDyPY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 </div>
+
+## Tissue Retration
+<div style="width: 95%; margin: 20px auto;">
+   <iframe width="640" height="360" src="https://www.youtube.com/embed/xpktfKmVkwg?si=xlmK6UuVCRZtYAaB" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
