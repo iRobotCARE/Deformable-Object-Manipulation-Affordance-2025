@@ -1,11 +1,22 @@
 # Deformable Object Manipulation & Affordance-2025
 
-2D pre-tension task: [code](code/Pretension.py)
+## Environment
 
-2D angle control: [code](code/ControlAngleSim.py)
+conda environment packages lists in `environment.yaml` and core packages are:
 
-# Webpage (Include Experimental Video)
+- SOFA 23.06
+- Taichi 1.6.0
+
+## Simulation Tasks
+
+- 2D pre-tension task: [code](code/Pretension.py)
+
+- 2D angle control: [code](code/ControlAngleSim.py)
+
+- 3d retraction: [code](code/ControlRetraction.py)
+
+- Affordance validation: [code](code/ContactOptimalSimScript.py)
+
+## Webpage (Include Experimental Video)
+
 https://irobotcare.github.io/Deformable-Object-Manipulation-Affordance-2025/
-
-# Examples Video
-[![Control an angle](https://img.youtube.com/vi/ZGHS-rUw-EA/mqdefault.jpg)](https://youtu.be/ZGHS-rUw-EA)
