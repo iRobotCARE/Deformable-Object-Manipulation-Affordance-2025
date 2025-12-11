@@ -19,4 +19,4 @@ conda environment packages lists in `environment.yaml` and core packages are:
 
 ## Webpage (Include Experimental Video)
 
-https://anonymous.4open.science/w/Deformable-Object-Manipulation-Affordance-2025-2422/
+[https://anonymous.4open.science/w/Deformable-Object-Manipulation-Affordance-2025-2422/](https://irobotcare.github.io/Deformable-Object-Manipulation-Affordance-2025/)
